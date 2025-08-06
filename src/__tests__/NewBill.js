@@ -72,7 +72,7 @@ describe("Given I am connected as an employee", () => {
     })
   });
   describe('handleChangeFile', () => {
-    it('should handle file change', async () => {
+    it('should handle file change with valid extension', async () => {
       const newBill = new NewBill({ document, onNavigate, store, localStorage });
       localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a.fr" }));
 
@@ -89,6 +89,53 @@ describe("Given I am connected as an employee", () => {
       });
       
       expect(handleChangeFile).toHaveBeenCalled();
+    });
+
+    it('should reject file with invalid extension and show error message', () => {
+      const newBill = new NewBill({ document, onNavigate, store, localStorage });
+      localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a.fr" }));
+
+      const file = screen.getByTestId("file");
+      const testFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      
+      Object.defineProperty(file, 'files', {
+        value: [testFile],
+        writable: false,
+      });
+
+      const mockEvent = {
+        preventDefault: jest.fn(),
+        target: { value: 'C:\\fakepath\\test.pdf' }
+      };
+
+      newBill.handleChangeFile(mockEvent);
+      
+      const errorMessage = document.querySelector('#file-error-message');
+      expect(errorMessage).toBeTruthy();
+      expect(errorMessage.textContent).toBe('Seuls les fichiers jpg, jpeg et png sont acceptés');
+    });
+
+    it('should accept png files', () => {
+      const newBill = new NewBill({ document, onNavigate, store, localStorage });
+      localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a.fr" }));
+
+      const file = screen.getByTestId("file");
+      const testFile = new File(['test'], 'test.png', { type: 'image/png' });
+      
+      Object.defineProperty(file, 'files', {
+        value: [testFile],
+        writable: false,
+      });
+
+      const mockEvent = {
+        preventDefault: jest.fn(),
+        target: { value: 'C:\\fakepath\\test.png' }
+      };
+
+      newBill.handleChangeFile(mockEvent);
+      
+      const errorMessage = document.querySelector('#file-error-message');
+      expect(errorMessage).toBeFalsy();
     });
   });
 })

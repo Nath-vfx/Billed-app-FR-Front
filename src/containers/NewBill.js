@@ -20,6 +20,40 @@ export default class NewBill {
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
     const filePath = e.target.value.split(/\\/g)
     const fileName = filePath[filePath.length-1]
+    
+    // Validation des extensions autorisées
+    const allowedExtensions = ['jpg', 'jpeg', 'png']
+    const fileExtension = fileName.split('.').pop().toLowerCase()
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+      // Afficher un message d'erreur
+      const errorElement = this.document.querySelector('#file-error-message')
+      if (errorElement) {
+        errorElement.textContent = 'Seuls les fichiers jpg, jpeg et png sont acceptés'
+        errorElement.style.display = 'block'
+      } else {
+        // Créer l'élément d'erreur s'il n'existe pas
+        const fileInput = this.document.querySelector(`input[data-testid="file"]`)
+        const errorDiv = this.document.createElement('div')
+        errorDiv.id = 'file-error-message'
+        errorDiv.style.color = 'red'
+        errorDiv.style.fontSize = '14px'
+        errorDiv.style.marginTop = '5px'
+        errorDiv.textContent = 'Seuls les fichiers jpg, jpeg et png sont acceptés'
+        fileInput.parentNode.appendChild(errorDiv)
+      }
+      
+      // Réinitialiser le champ fichier
+      e.target.value = ''
+      return
+    }
+    
+    // Masquer le message d'erreur si présent
+    const errorElement = this.document.querySelector('#file-error-message')
+    if (errorElement) {
+      errorElement.style.display = 'none'
+    }
+    
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
     formData.append('file', file)
