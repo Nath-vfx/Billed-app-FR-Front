@@ -117,6 +117,246 @@ describe("Given that I am a user on login page", () => {
   });
 });
 
+describe("Given that I am a user on login page and login fails", () => {
+  describe("When I submit employee form and login fails", () => {
+    test("Then createUser should be called", async () => {
+      document.body.innerHTML = LoginUI();
+      const inputData = {
+        email: "johndoe@email.com",
+        password: "azerty",
+      };
+
+      const inputEmailUser = screen.getByTestId("employee-email-input");
+      fireEvent.change(inputEmailUser, { target: { value: inputData.email } });
+
+      const inputPasswordUser = screen.getByTestId("employee-password-input");
+      fireEvent.change(inputPasswordUser, { target: { value: inputData.password } });
+
+      const form = screen.getByTestId("form-employee");
+
+      Object.defineProperty(window, "localStorage", {
+        value: {
+          getItem: jest.fn(() => null),
+          setItem: jest.fn(() => null),
+        },
+        writable: true,
+      });
+
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      let PREVIOUS_LOCATION = "";
+
+      const mockStore = {
+        login: jest.fn().mockRejectedValue(new Error("Login failed")),
+        users: jest.fn(() => ({
+          create: jest.fn().mockResolvedValue({})
+        }))
+      };
+
+      const login = new Login({
+        document,
+        localStorage: window.localStorage,
+        onNavigate,
+        PREVIOUS_LOCATION,
+        store: mockStore,
+      });
+
+      const createUserSpy = jest.spyOn(login, 'createUser');
+      createUserSpy.mockResolvedValue({});
+
+      fireEvent.submit(form);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(createUserSpy).toHaveBeenCalledWith({
+        type: "Employee",
+        email: inputData.email,
+        password: inputData.password,
+        status: "connected",
+      });
+    });
+  });
+
+  describe("When I submit admin form and login fails", () => {
+    test("Then createUser should be called", async () => {
+      document.body.innerHTML = LoginUI();
+      const inputData = {
+        email: "admin@email.com",
+        password: "azerty",
+      };
+
+      const inputEmailUser = screen.getByTestId("admin-email-input");
+      fireEvent.change(inputEmailUser, { target: { value: inputData.email } });
+
+      const inputPasswordUser = screen.getByTestId("admin-password-input");
+      fireEvent.change(inputPasswordUser, { target: { value: inputData.password } });
+
+      const form = screen.getByTestId("form-admin");
+
+      Object.defineProperty(window, "localStorage", {
+        value: {
+          getItem: jest.fn(() => null),
+          setItem: jest.fn(() => null),
+        },
+        writable: true,
+      });
+
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      let PREVIOUS_LOCATION = "";
+
+      const mockStore = {
+        login: jest.fn().mockRejectedValue(new Error("Login failed")),
+        users: jest.fn(() => ({
+          create: jest.fn().mockResolvedValue({})
+        }))
+      };
+
+      const login = new Login({
+        document,
+        localStorage: window.localStorage,
+        onNavigate,
+        PREVIOUS_LOCATION,
+        store: mockStore,
+      });
+
+      const createUserSpy = jest.spyOn(login, 'createUser');
+      createUserSpy.mockResolvedValue({});
+
+      fireEvent.submit(form);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(createUserSpy).toHaveBeenCalledWith({
+        type: "Admin",
+        email: inputData.email,
+        password: inputData.password,
+        status: "connected",
+      });
+    });
+  });
+});
+
+describe("Given that I want to test login and createUser methods", () => {
+  beforeEach(() => {
+    document.body.innerHTML = LoginUI();
+  });
+
+  describe("When login method is called with store", () => {
+    test("Then it should call store.login and set jwt in localStorage", async () => {
+      const mockStore = {
+        login: jest.fn().mockResolvedValue({ jwt: "mock-jwt-token" })
+      };
+
+      const login = new Login({
+        document: document,
+        localStorage: window.localStorage,
+        onNavigate: jest.fn(),
+        PREVIOUS_LOCATION: "",
+        store: mockStore,
+      });
+
+      Object.defineProperty(window, "localStorage", {
+        value: {
+          setItem: jest.fn(),
+        },
+        writable: true,
+      });
+
+      const user = { email: "test@email.com", password: "password" };
+      await login.login(user);
+
+      expect(mockStore.login).toHaveBeenCalledWith(JSON.stringify({
+        email: user.email,
+        password: user.password,
+      }));
+      expect(localStorage.setItem).toHaveBeenCalledWith('jwt', 'mock-jwt-token');
+    });
+  });
+
+  describe("When login method is called without store", () => {
+    test("Then it should return null", () => {
+      const login = new Login({
+        document: document,
+        localStorage: window.localStorage,
+        onNavigate: jest.fn(),
+        PREVIOUS_LOCATION: "",
+        store: null,
+      });
+
+      const user = { email: "test@email.com", password: "password" };
+      const result = login.login(user);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("When createUser method is called with store", () => {
+    test("Then it should create user and call login", async () => {
+      const createMock = jest.fn().mockResolvedValue({});
+      const mockStore = {
+        users: jest.fn(() => ({
+          create: createMock
+        })),
+        login: jest.fn().mockResolvedValue({ jwt: "mock-jwt-token" })
+      };
+
+      const login = new Login({
+        document: document,
+        localStorage: window.localStorage,
+        onNavigate: jest.fn(),
+        PREVIOUS_LOCATION: "",
+        store: mockStore,
+      });
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const loginSpy = jest.spyOn(login, 'login').mockResolvedValue({});
+
+      const user = { 
+        type: "Employee",
+        email: "test@email.com", 
+        password: "password" 
+      };
+
+      await login.createUser(user);
+
+      expect(createMock).toHaveBeenCalledWith({
+        data: JSON.stringify({
+          type: user.type,
+          name: user.email.split('@')[0],
+          email: user.email,
+          password: user.password,
+        })
+      });
+      expect(consoleSpy).toHaveBeenCalledWith(`User with ${user.email} is created`);
+      expect(loginSpy).toHaveBeenCalledWith(user);
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe("When createUser method is called without store", () => {
+    test("Then it should return null", () => {
+      const login = new Login({
+        document: document,
+        localStorage: window.localStorage,
+        onNavigate: jest.fn(),
+        PREVIOUS_LOCATION: "",
+        store: null,
+      });
+
+      const user = { email: "test@email.com", password: "password" };
+      const result = login.createUser(user);
+
+      expect(result).toBeNull();
+    });
+  });
+});
+
 describe("Given that I am a user on login page", () => {
   describe("When I do not fill fields and I click on admin button Login In", () => {
     test("Then It should renders Login page", () => {
