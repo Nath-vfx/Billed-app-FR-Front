@@ -141,7 +141,8 @@ export default class {
 
       const filteredBillsList = filteredBills(bills, getStatus(index))
       filteredBillsList.forEach(bill => {
-        $(`#open-bill${bill.id}`).off('click').on('click', (e) => this.handleEditTicket(e, bill, bills))
+        // Utiliser une délégation d'événement pour éviter les conflits
+        $(`#status-bills-container${index} #open-bill${bill.id}`).off('click').on('click', (e) => this.handleEditTicket(e, bill, bills))
       })
     } else {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(90deg)'})
